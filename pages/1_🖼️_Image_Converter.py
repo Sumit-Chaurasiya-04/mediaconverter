@@ -9,7 +9,11 @@ from pathlib import Path
 import cv2
 import numpy as np
 try:
-    from rembg import remove as rembg_remove
+    try:
+    from rembg import remove
+    REMBG_AVAILABLE = True
+except ImportError:
+    REMBG_AVAILABLE = False as rembg_remove
     REMBG_AVAILABLE = True
 except ImportError:
     REMBG_AVAILABLE = False
@@ -263,7 +267,10 @@ with tab9:
                 with st.spinner("Isolating foreground contours (Initial execution downloads local u2net model)..."):
                     # Step 1: Extract clean Alpha transparency mask via rembg
                     input_bytes = uploaded_file.getvalue()
-                    output_bytes = remove(input_bytes)
+                    if not REMBG_AVAILABLE:
+    st.error("❌ Background removal is not available on cloud deployment. Run locally for this feature.")
+else:
+    output_bytes = remove(input_bytes)
                     foreground = Image.open(io.BytesIO(output_bytes)).convert("RGBA")
                     
                     # Step 2: Handle composite pipeline generation logic structure
