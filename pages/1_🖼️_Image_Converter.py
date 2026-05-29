@@ -530,18 +530,63 @@ with tab8:
     st.markdown("#### Remove image background (AI-powered)")
 
     if not REMBG_AVAILABLE:
-        st.warning("""
-        ⚠️ **Background removal is not available on Streamlit Cloud.**
+        import streamlit as st
+from PIL import Image
+import io
 
-        This feature requires the `rembg` library which is too large for free cloud hosting.
+# Ensure rembg is installed in your local virtual environment
+try:
+    from rembg import remove
+    REMBG_AVAILABLE = True
+except ImportError:
+    REMBG_AVAILABLE = False
 
-        **To use this feature:**
-        - Run the app locally on your computer
-        - Install rembg: `pip install rembg`
-        - Restart the app
+st.header("Remove Image Background (AI-Powered)")
 
-        All other image features work perfectly on the cloud! ✅
-        """)
+if not REMBG_AVAILABLE:
+    st.error("❌ 'rembg' library is missing. Run `pip install \"rembg[cpu]\"` in your terminal and restart.")
+else:
+    uploaded_img = st.file_uploader("Upload an image to isolate the subject", type=["png", "jpg", "jpeg", "webp"])
+
+    if uploaded_img is not None:
+        # Load the uploaded file into a PIL Image object
+        input_image = Image.open(uploaded_img)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.image(input_image, caption="Original Image", use_container_width=True)
+            
+        with col2:
+            if st.button("🪄 Isolate Subject & Remove Background", use_container_width=True):
+                with st.spinner("Analyzing matrices and separating layers..."):
+                    try:
+                        # Convert PIL Image to raw bytes for rembg processing
+                        img_byte_arr = io.BytesIO()
+                        input_image.save(img_byte_arr, format=input_image.format if input_image.format else "PNG")
+                        raw_bytes = img_byte_arr.getvalue()
+                        
+                        # Process using the AI engine
+                        output_bytes = remove(raw_bytes)
+                        
+                        # Convert resulting bytes back to a displayable PIL Image
+                        result_image = Image.open(io.BytesIO(output_bytes))
+                        
+                        st.image(result_image, caption="AI Isolated Image", use_container_width=True)
+                        
+                        # Prepare clean download buffer
+                        buf = io.BytesIO()
+                        result_image.save(buf, format="PNG") # PNG handles transparency alpha channels natively
+                        byte_im = buf.getvalue()
+                        
+                        st.download_button(
+                            label="📥 Download Transparent Image",
+                            data=byte_im,
+                            file_name=f"{uploaded_img.name.split('.')[0]}_nobg.png",
+                            mime="image/png",
+                            use_container_width=True
+                        )
+                    except Exception as e:
+                        st.error(f"Execution Error: {str(e)}")
     else:
         uploaded_bg = st.file_uploader(
             "Upload image for background removal",
