@@ -1,0 +1,342 @@
+/* assets/style.css */
+/* Custom styles for our app */
+/* Streamlit allows injecting custom CSS using st.markdown with unsafe_allow_html=True */
+
+/* ============================================================
+   CSS VARIABLES - Easy to change colors in one place
+   ============================================================ */
+:root {
+    --primary: #6C63FF;        /* Purple */
+    --secondary: #FF6584;      /* Pink */
+    --success: #00D4AA;        /* Green */
+    --warning: #FFA500;        /* Orange */
+    --error: #FF4B4B;          /* Red */
+    --bg-card: #1E2130;        /* Dark card background */
+    --text-muted: #8B8FA8;     /* Muted text */
+    --border: rgba(108, 99, 255, 0.3);  /* Subtle border */
+    --gradient: linear-gradient(135deg, #6C63FF 0%, #FF6584 100%);
+    --shadow: 0 4px 20px rgba(108, 99, 255, 0.2);
+}
+
+/* ============================================================
+   MAIN LAYOUT
+   ============================================================ */
+
+/* Make the app full width */
+.main .block-container {
+    max-width: 1200px;
+    padding: 2rem 1.5rem;
+    margin: 0 auto;
+}
+
+/* ============================================================
+   HERO SECTION
+   ============================================================ */
+.hero-section {
+    background: var(--gradient);
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+    animation: fadeInDown 0.6s ease;
+}
+
+.hero-section h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.hero-section p {
+    font-size: 1.2rem;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 0;
+}
+
+/* ============================================================
+   FEATURE CARDS
+   ============================================================ */
+.feature-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    height: 100%;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow);
+    border-color: var(--primary);
+}
+
+.feature-card .icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.feature-card h3 {
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.feature-card p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* ============================================================
+   UPLOAD AREA
+   ============================================================ */
+.upload-area {
+    border: 2px dashed var(--primary);
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    text-align: center;
+    background: rgba(108, 99, 255, 0.05);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    background: rgba(108, 99, 255, 0.1);
+    border-color: var(--secondary);
+}
+
+.upload-area .upload-icon {
+    font-size: 4rem;
+    display: block;
+    margin-bottom: 1rem;
+}
+
+/* ============================================================
+   STATS BADGES
+   ============================================================ */
+.stat-badge {
+    background: rgba(108, 99, 255, 0.15);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 0.5rem 1.2rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--primary);
+    font-weight: 600;
+    margin: 0.25rem;
+}
+
+/* ============================================================
+   PROGRESS BAR
+   ============================================================ */
+.progress-container {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    height: 8px;
+    overflow: hidden;
+    margin: 1rem 0;
+}
+
+.progress-bar {
+    height: 100%;
+    background: var(--gradient);
+    border-radius: 10px;
+    transition: width 0.3s ease;
+}
+
+/* ============================================================
+   RESULT SECTION
+   ============================================================ */
+.result-section {
+    background: rgba(0, 212, 170, 0.1);
+    border: 1px solid rgba(0, 212, 170, 0.3);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    animation: fadeInUp 0.4s ease;
+}
+
+/* ============================================================
+   INFO BOXES
+   ============================================================ */
+.info-box {
+    background: rgba(108, 99, 255, 0.1);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.2rem;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.8);
+}
+
+.warning-box {
+    background: rgba(255, 165, 0, 0.1);
+    border-left: 4px solid var(--warning);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.2rem;
+    margin: 1rem 0;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.stButton > button {
+    background: var(--gradient) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 0.6rem 2rem !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3) !important;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4) !important;
+}
+
+/* Download button - make it stand out */
+.stDownloadButton > button {
+    background: linear-gradient(135deg, #00D4AA 0%, #00A882 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 0.8rem 2rem !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    box-shadow: 0 4px 15px rgba(0, 212, 170, 0.3) !important;
+}
+
+/* ============================================================
+   FILE INFO TABLE
+   ============================================================ */
+.file-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+.file-info-table th {
+    background: rgba(108, 99, 255, 0.2);
+    color: var(--primary);
+    padding: 0.7rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    border-radius: 8px 8px 0 0;
+}
+
+.file-info-table td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.8);
+}
+
+.file-info-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(108, 99, 255, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(108, 99, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(108, 99, 255, 0); }
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* ============================================================
+   RESPONSIVE - Mobile Friendly
+   ============================================================ */
+@media (max-width: 768px) {
+    .hero-section h1 {
+        font-size: 1.8rem;
+    }
+    
+    .hero-section p {
+        font-size: 1rem;
+    }
+    
+    .main .block-container {
+        padding: 1rem;
+    }
+}
+
+/* ============================================================
+   SCROLLBAR STYLING
+   ============================================================ */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.05);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary);
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+[data-testid="stSidebar"] {
+    background: rgba(30, 33, 48, 0.95) !important;
+    border-right: 1px solid var(--border) !important;
+}
+
+/* ============================================================
+   SELECTBOX AND INPUTS
+   ============================================================ */
+.stSelectbox > div > div {
+    border-radius: 10px !important;
+    border-color: var(--border) !important;
+}
+
+.stSlider > div > div > div > div {
+    background: var(--primary) !important;
+}

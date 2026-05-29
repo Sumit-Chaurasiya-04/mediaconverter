@@ -1,0 +1,107 @@
+# .gitignore
+# Files and folders that Git should NOT track/upload
+
+# ============================================================
+# TEMPORARY FILES (never commit these!)
+# ============================================================
+tmp/
+temp/
+*.tmp
+*.temp
+
+# System temp directories
+/tmp/
+mediaconvert_uploads/
+mediaconvert_outputs/
+
+# ============================================================
+# PYTHON
+# ============================================================
+# Virtual environment folders
+venv/
+env/
+.venv/
+.env/
+ENV/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+
+# Distribution folders
+dist/
+build/
+*.egg-info/
+*.egg
+
+# ============================================================
+# ENVIRONMENT VARIABLES
+# ============================================================
+# Never commit files with passwords/API keys!
+.env
+.env.local
+.env.production
+secrets.toml
+
+# ============================================================
+# VS CODE
+# ============================================================
+.vscode/
+*.code-workspace
+
+# ============================================================
+# OPERATING SYSTEM FILES
+# ============================================================
+# Windows
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# Mac
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+
+# ============================================================
+# UPLOADED FILES
+# ============================================================
+# Users' uploaded files should never be committed
+uploads/
+outputs/
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+*.flv
+*.wmv
+
+# Large files (you can adjust these)
+# *.pdf  # Uncomment if you don't want PDFs committed
+# *.zip
+
+# ============================================================
+# LOGS
+# ============================================================
+*.log
+logs/
+log/
+
+# ============================================================
+# JUPYTER NOTEBOOKS (if any)
+# ============================================================
+.ipynb_checkpoints/
+*.ipynb
+
+# ============================================================
+# TESTING
+# ============================================================
+.pytest_cache/
+.coverage
+htmlcov/
