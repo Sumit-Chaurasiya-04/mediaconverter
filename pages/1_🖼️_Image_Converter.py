@@ -8,7 +8,11 @@ from pathlib import Path
 # Advanced processing modules for local AI and computer vision
 import cv2
 import numpy as np
-from rembg import remove
+try:
+    from rembg import remove as rembg_remove
+    REMBG_AVAILABLE = True
+except ImportError:
+    REMBG_AVAILABLE = False
 
 # 1. PAGE CONFIGURATION
 st.set_page_config(page_title="Image Converter Studio", page_icon="🖼️", layout="wide")
