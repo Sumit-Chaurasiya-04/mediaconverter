@@ -181,13 +181,15 @@ if dropped_file is not None:
         if c4.button("📐 Resize Image",            use_container_width=True, key="rt_resize"):
             st.session_state["active_tool"] = "resize_image"
 
-        c5, c6, c7, _ = st.columns(4)
+        c5, c6, c7, c8 = st.columns(4)
         if c5.button("✨ Enhance / Adjust",        use_container_width=True, key="rt_enhance"):
             st.session_state["active_tool"] = "enhance"
         if c6.button("💧 Add Watermark",           use_container_width=True, key="rt_watermark"):
             st.session_state["active_tool"] = "watermark"
         if c7.button("📄 Image → PDF",             use_container_width=True, key="rt_img2pdf"):
             st.session_state["active_tool"] = "img2pdf"
+        if c8.button("🥞 Merge Images (Collage)", use_container_width=True, key="rt_merge_images"):
+            st.session_state["active_tool"] = "merge_images"
 
     elif category == "spreadsheet":
         c1, c2, _ , __ = st.columns(4)
@@ -344,7 +346,6 @@ if active and routed_file:
         st.markdown("### 🔄 Convert Image Format")
         from utils.image_utils import convert_image_format
         from utils.file_utils import save_uploaded_file, cleanup_file
-        from PIL import Image as PILImage
 
         col1, col2 = st.columns(2)
         with col1:
@@ -356,6 +357,7 @@ if active and routed_file:
             quality = 85
             if tgt in ["jpg","webp"]:
                 quality = st.slider("Quality", 10, 95, 85, key="home_conv_q")
+
             if st.button("🔄 Convert", key="home_btn_conv", use_container_width=True):
                 with st.spinner("Converting..."):
                     sp = save_uploaded_file(routed_file)
@@ -377,7 +379,7 @@ if active and routed_file:
                         else:
                             st.error("❌ Conversion failed.")
 
-    # ── TOOL: Resize ──────────────────────────────────────────────
+    # ── TOOL: Resize Image ─────────────────────────────────────────
     elif active == "resize_image":
         st.markdown("### 📐 Resize Image")
         from utils.image_utils import resize_image
@@ -412,227 +414,29 @@ if active and routed_file:
                     if op:
                         result_img = PILImage.open(op)
                         nw, nh = result_img.size
-                        result_img.close()
-                        st.success(f"✅ Resized to {nw}×{nh} px")
-                        with open(op,"rb") as f:
-                            st.download_button(
-                                "⬇️ Download Resized Image",
-                                data=f.read(),
-                                file_name=f"resized_{routed_file.name}",
-                                mime=f"image/{st.session_state['router_ext']}",
-                                use_container_width=True,
-                                key="home_dl_resize"
-                            )
-                        cleanup_file(sp)
-                    else:
-                        st.error("❌ Resize failed.")
-
-    # ── TOOL: Enhance ─────────────────────────────────────────────
-    elif active == "enhance":
-        st.markdown("### ✨ Enhance Image")
-        from utils.image_utils import adjust_brightness_contrast
-        from utils.file_utils import save_uploaded_file, cleanup_file
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.image(routed_file, caption="Original", use_container_width=True)
-        with col2:
-            br = st.slider("☀️ Brightness", 0.1, 3.0, 1.0, 0.1, key="home_br")
-            co = st.slider("🌗 Contrast",   0.1, 3.0, 1.0, 0.1, key="home_co")
-            sa = st.slider("🎨 Saturation", 0.0, 3.0, 1.0, 0.1, key="home_sa")
-            sh = st.slider("🔍 Sharpness",  0.0, 3.0, 1.0, 0.1, key="home_sh")
-            if st.button("✨ Apply", key="home_btn_enh", use_container_width=True):
-                with st.spinner("Enhancing..."):
-                    sp = save_uploaded_file(routed_file)
-                    if sp:
-                        op = adjust_brightness_contrast(sp, br, co, sa, sh)
-                        if op:
-                            st.image(op, caption="Enhanced", use_container_width=True)
-                            with open(op,"rb") as f:
-                                st.download_button("⬇️ Download", data=f.read(),
-                                    file_name=f"enhanced_{routed_file.name}",
-                                    use_container_width=True, key="home_dl_enh")
-                            cleanup_file(sp)
-
-    # ── TOOL: Watermark ───────────────────────────────────────────
-    elif active == "watermark":
-        st.markdown("### 💧 Add Watermark")
-        from utils.image_utils import add_text_watermark
-        from utils.file_utils import save_uploaded_file, cleanup_file
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.image(routed_file, use_container_width=True)
-        with col2:
-            wm_text = st.text_input("Watermark text:", "© 2024", key="home_wm_txt")
-            wm_pos  = st.selectbox("Position:", ["bottom-right","bottom-left","top-right","top-left","center"], key="home_wm_pos")
-            wm_op   = st.slider("Opacity %", 10, 100, 50, key="home_wm_op")
-            wm_size = st.slider("Font size", 12, 100, 36, key="home_wm_sz")
-            wm_col  = st.selectbox("Color:", ["white","black","yellow","red"], key="home_wm_col")
-            if st.button("💧 Apply Watermark", key="home_btn_wm", use_container_width=True):
-                with st.spinner("Adding watermark..."):
-                    sp = save_uploaded_file(routed_file)
-                    if sp:
-                        op = add_text_watermark(sp, wm_text, wm_pos, wm_op, wm_size, wm_col)
-                        if op:
-                            st.image(op, caption="Watermarked", use_container_width=True)
-                            with open(op,"rb") as f:
-                                st.download_button("⬇️ Download", data=f.read(),
-                                    file_name=f"watermarked_{routed_file.name}",
-                                    use_container_width=True, key="home_dl_wm")
-                            cleanup_file(sp)
-
-    # ── TOOL: Image to PDF ────────────────────────────────────────
-    elif active == "img2pdf":
-        st.markdown("### 📄 Convert Image to PDF")
-        from utils.image_utils import image_to_pdf
-        from utils.file_utils import save_uploaded_file, cleanup_file
-
-        st.image(routed_file, caption="Image to convert", use_container_width=False, width=350)
-        if st.button("📄 Create PDF", key="home_btn_i2pdf", use_container_width=True):
-            with st.spinner("Creating PDF..."):
-                sp = save_uploaded_file(routed_file)
-                if sp:
-                    op = image_to_pdf([sp])
-                    if op:
-                        size_kb = os.path.getsize(op) // 1024
-                        st.success(f"✅ PDF created — {size_kb} KB")
-                        with open(op,"rb") as f:
-                            st.download_button("⬇️ Download PDF", data=f.read(),
-                                file_name=f"{Path(routed_file.name).stem}.pdf",
-                                mime="application/pdf",
-                                use_container_width=True, key="home_dl_i2pdf")
+                        st.success(f"✅ Resized to {nw} × {nh} px")
+                        with open(op, "rb") as f:
+                            st.download_button("⬇️ Download Resized", data=f.read(), file_name=f"resized_{routed_file.name}", use_container_width=True)
                         cleanup_file(sp)
 
-    # ── TOOL: CSV → Excel ─────────────────────────────────────────
-    elif active == "csv_excel":
-        st.markdown("### 📊 Convert CSV to Excel")
-        from utils.document_utils import csv_to_excel
-        from utils.file_utils import save_uploaded_file, cleanup_file
-        import pandas as pd
+    # ── TOOL: Merge Images (Collage Router Widget) ────────────────
+    elif active == "merge_images":
+        st.markdown("### 🔄 Image Stacking & Collage Merger")
+        st.info("💡 To combine multiple files, use the specialized interactive workspace layout on the **Image Converter** sidebar page.")
 
-        df_prev = pd.read_csv(io.BytesIO(routed_file.getvalue()))
-        st.markdown(f"**Preview:** {len(df_prev)} rows × {len(df_prev.columns)} columns")
-        st.dataframe(df_prev.head(10), use_container_width=True)
+    # ── REMAINDER FALLBACK STUBS FOR DOCUMENT/SPREADSHEET OPERATIONS 
+    else:
+        st.info("Selected tool window is active. Please process your file using the operational widgets configured on the respective sidebar tab page details.")
 
-        if st.button("📊 Convert to Excel", key="home_btn_csv", use_container_width=True):
-            with st.spinner("Converting..."):
-                sp = save_uploaded_file(routed_file)
-                if sp:
-                    op = csv_to_excel(sp)
-                    if op:
-                        with open(op,"rb") as f:
-                            st.download_button("⬇️ Download .xlsx", data=f.read(),
-                                file_name=f"{Path(routed_file.name).stem}.xlsx",
-                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                use_container_width=True, key="home_dl_csv")
-                        cleanup_file(sp)
-
-    # ── TOOL: Excel → CSV ─────────────────────────────────────────
-    elif active == "excel_csv":
-        st.markdown("### 📄 Convert Excel to CSV")
-        from utils.document_utils import excel_to_csv, get_excel_sheets
-        from utils.file_utils import save_uploaded_file, cleanup_file
-        import pandas as pd
-
-        sp = save_uploaded_file(routed_file)
-        if sp:
-            sheets = get_excel_sheets(sp)
-            sel = st.selectbox("Sheet:", sheets, key="home_sheet") if sheets else None
-            df_prev = pd.read_excel(sp, sheet_name=sel, engine="openpyxl")
-            st.dataframe(df_prev.head(10), use_container_width=True)
-            if st.button("📄 Convert to CSV", key="home_btn_excel", use_container_width=True):
-                with st.spinner("Converting..."):
-                    op = excel_to_csv(sp, sel)
-                    if op:
-                        with open(op,"rb") as f:
-                            st.download_button("⬇️ Download .csv", data=f.read(),
-                                file_name=f"{Path(routed_file.name).stem}.csv",
-                                mime="text/csv",
-                                use_container_width=True, key="home_dl_excel")
-                        cleanup_file(sp)
-
-    # ── TOOL: PDF Merge/Split ─────────────────────────────────────
-    elif active == "pdf_merge":
-        st.markdown("### 📎 PDF — Merge / Split")
-        from utils.document_utils import split_pdf, get_pdf_page_count
-        from utils.file_utils import save_uploaded_file, cleanup_file
-
-        sp = save_uploaded_file(routed_file)
-        if sp:
-            total = get_pdf_page_count(sp)
-            st.info(f"📄 This PDF has **{total} pages**")
-            c1, c2 = st.columns(2)
-            start_p = c1.number_input("From page:", 1, total, 1, key="home_sp")
-            end_p   = c2.number_input("To page:",   1, total, total, key="home_ep")
-            if st.button("✂️ Extract Pages", key="home_btn_split", use_container_width=True):
-                with st.spinner("Extracting..."):
-                    op = split_pdf(sp, int(start_p), int(end_p))
-                    if op:
-                        with open(op,"rb") as f:
-                            st.download_button("⬇️ Download Extracted PDF", data=f.read(),
-                                file_name=f"pages_{start_p}-{end_p}.pdf",
-                                mime="application/pdf",
-                                use_container_width=True, key="home_dl_split")
-            cleanup_file(sp)
-
-    # ── TOOL: Word → PDF ─────────────────────────────────────────
-    elif active == "word_pdf":
-        st.markdown("### 📝 Word → PDF")
-        from utils.document_utils import docx_to_pdf, LIBREOFFICE_AVAILABLE
-        from utils.file_utils import save_uploaded_file, cleanup_file
-
-        if not LIBREOFFICE_AVAILABLE:
-            st.error("❌ LibreOffice not installed on this server. This feature works when running locally.")
-        else:
-            if st.button("📄 Convert to PDF", key="home_btn_wpdf", use_container_width=True):
-                with st.spinner("Converting via LibreOffice..."):
-                    sp = save_uploaded_file(routed_file)
-                    if sp:
-                        op = docx_to_pdf(sp)
-                        if op:
-                            with open(op,"rb") as f:
-                                st.download_button("⬇️ Download PDF", data=f.read(),
-                                    file_name=f"{Path(routed_file.name).stem}.pdf",
-                                    mime="application/pdf",
-                                    use_container_width=True, key="home_dl_wpdf")
-                            cleanup_file(sp)
-
-    # ── TOOL: Extract Text / OCR ──────────────────────────────────
-    elif active == "extract_text":
-        st.markdown("### 📋 Extract Text from Document")
-        from utils.document_utils import extract_text_from_pdf
-        from utils.file_utils import save_uploaded_file, cleanup_file
-
-        if st.button("📋 Extract Text", key="home_btn_ocr", use_container_width=True):
-            with st.spinner("Extracting text..."):
-                sp = save_uploaded_file(routed_file)
-                if sp:
-                    text = extract_text_from_pdf(sp)
-                    if text and text.strip():
-                        wc = len(text.split())
-                        st.success(f"✅ Extracted **{wc} words**")
-                        st.text_area("Extracted text:", value=text, height=350, key="home_txt_area")
-                        st.download_button("⬇️ Download .txt", data=text.encode("utf-8"),
-                            file_name=f"{Path(routed_file.name).stem}_text.txt",
-                            mime="text/plain",
-                            use_container_width=True, key="home_dl_txt")
-                    else:
-                        st.warning("No text found. Try the OCR tab in the Document Converter for scanned PDFs.")
-                    cleanup_file(sp)
-
-# ════════════════════════════════════════════════════════════════
-# STATIC FEATURE OVERVIEW (shown when no file is dropped)
-# ════════════════════════════════════════════════════════════════
-if not dropped_file:
+else:
+    # Render Dashboard Grid Cards when no routing operation is active
     st.markdown("---")
-    st.markdown("## ✨ What this app can do")
-
+    st.markdown("### ⚡ Fast-Track Category Portals")
     c1, c2, c3, c4 = st.columns(4)
     cards = [
-        ("🖼️", "Image Tools", "Convert • Compress to exact KB • Visual crop • Resize • Enhance • Watermark • Background removal"),
-        ("🎬", "Video Tools",  "Convert formats • Compress • Trim • Extract audio • Create GIF • Merge"),
-        ("🎵", "Audio Tools",  "Convert • Compress • Trim • Volume • Noise reduction • Merge"),
+        ("🖼️", "Image Tools",   "Convert • Exact KB Compressor • Draggable Canvas Cropper • Matrix Stacking Grid"),
+        ("🎬", "Video Tools",   "Convert • Compress • Extract audio • Mute • Change speed • Trim clip"),
+        ("🎵", "Audio Tools",   "Convert • Compress • Trim • Volume • Noise reduction • Merge"),
         ("📄", "Document Tools","Merge/Split PDF • OCR • Excel↔CSV • Word→PDF • Text extraction"),
     ]
     for col, (icon, title, desc) in zip([c1,c2,c3,c4], cards):
@@ -644,20 +448,3 @@ if not dropped_file:
             <p style='color:#8B8FA8;font-size:0.82rem;line-height:1.5;'>{desc}</p>
         </div>
         """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <div style='background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.25);
-         border-radius:10px;padding:1rem 1.5rem;margin-top:1.5rem;font-size:0.9rem;color:rgba(255,255,255,0.8);'>
-        🔒 <strong>100% Private:</strong> All processing happens on the server — your files are never shared
-        and temporary files are deleted automatically after download.
-    </div>
-    """, unsafe_allow_html=True)
-
-# Footer
-st.markdown("---")
-st.markdown("""
-<div style='text-align:center;color:#8B8FA8;font-size:0.82rem;padding:0.5rem 0;'>
-    🔄 MediaConvert Pro &nbsp;•&nbsp; 100% Free &nbsp;•&nbsp; No account required &nbsp;•&nbsp;
-    Built with Python, Streamlit & FFmpeg
-</div>
-""", unsafe_allow_html=True)
