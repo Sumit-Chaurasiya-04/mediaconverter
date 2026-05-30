@@ -9,3 +9,4 @@ openpyxl
 pytesseract
 pdfplumber
 PyPDF2
+streamlit-cropper>=0.3.0

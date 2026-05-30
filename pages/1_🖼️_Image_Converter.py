@@ -144,9 +144,16 @@ with tab1:
                         else:
                             st.error("❌ Failed to save uploaded file.")
 
-# ── TAB 2: COMPRESSION ───────────────────────────────────────────
+# ── TAB 2: COMPRESSION ──────────────────────────────────────────
 with tab2:
-    st.markdown("#### Reduce image file size")
+    st.markdown("#### Compress image — standard quality slider OR exact KB target")
+
+    compress_mode = st.radio(
+        "Compression mode:",
+        ["🎚️ Quality Slider (standard)", "🎯 Target File Size (exact KB)"],
+        horizontal=True,
+        key="compress_mode_radio"
+    )
 
     uploaded_compress = st.file_uploader(
         "Upload image to compress",
@@ -159,53 +166,162 @@ with tab2:
         if not is_valid:
             st.error(f"❌ {error_msg}")
         else:
+            from PIL import Image as PILImage
+            import io as _io
+
+            # Load once into PIL — all ops in-memory from here
+            raw_bytes = uploaded_compress.getvalue()
+            pil_img = PILImage.open(_io.BytesIO(raw_bytes))
+            original_kb = len(raw_bytes) // 1024
+
             col1, col2 = st.columns(2)
 
             with col1:
-                st.image(uploaded_compress, caption="Original", use_container_width=True)
+                st.image(uploaded_compress, caption=f"Original — {original_kb} KB", use_container_width=True)
 
             with col2:
-                quality = st.slider(
-                    "Quality Level",
-                    min_value=10, max_value=95, value=60,
-                    key="compress_quality"
-                )
 
-                if quality < 30:
-                    st.warning("⚠️ Very low quality")
-                elif quality < 60:
-                    st.info("📌 Good compression")
+                # ── MODE A: Standard quality slider ─────────────────
+                if compress_mode == "🎚️ Quality Slider (standard)":
+                    quality = st.slider(
+                        "Quality Level",
+                        min_value=10, max_value=95, value=60,
+                        help="Lower = smaller file. Higher = better quality.",
+                        key="compress_quality_slider"
+                    )
+
+                    if quality < 30:
+                        st.warning("⚠️ Very low quality")
+                    elif quality < 60:
+                        st.info("📌 Good compression balance")
+                    else:
+                        st.success("✅ High quality retained")
+
+                    out_format = "JPEG" if uploaded_compress.name.lower().endswith(
+                        (".jpg", ".jpeg")) else "WEBP"
+
+                    if st.button("📦 Compress Image", key="btn_compress_slider", use_container_width=True):
+                        with st.spinner("Compressing..."):
+                            buf = _io.BytesIO()
+                            img_out = pil_img.copy()
+                            if img_out.mode not in ("RGB", "L"):
+                                img_out = img_out.convert("RGB")
+                            img_out.save(buf, format=out_format, quality=quality, optimize=True)
+                            result_bytes = buf.getvalue()
+                            result_kb = len(result_bytes) // 1024
+                            reduction = (1 - len(result_bytes) / len(raw_bytes)) * 100
+
+                            col_a, col_b, col_c = st.columns(3)
+                            col_a.metric("Original", f"{original_kb} KB")
+                            col_b.metric("Compressed", f"{result_kb} KB")
+                            col_c.metric("Reduction", f"{reduction:.1f}%")
+
+                            ext = "jpg" if out_format == "JPEG" else "webp"
+                            st.download_button(
+                                "⬇️ Download Compressed Image",
+                                data=result_bytes,
+                                file_name=f"compressed_{Path(uploaded_compress.name).stem}.{ext}",
+                                mime=f"image/{ext}",
+                                use_container_width=True
+                            )
+
+                # ── MODE B: Target KB compression ───────────────────
                 else:
-                    st.success("✅ High quality")
+                    from utils.smart_compress import compress_to_target_kb, suggest_resize_dimensions
 
-                resize_option = st.checkbox("Also resize?", key="compress_resize")
-                max_width = None
-                max_height = None
+                    st.markdown("**Quick presets:**")
+                    qcol1, qcol2, qcol3, qcol4 = st.columns(4)
+                    preset_kb = None
+                    if qcol1.button("20 KB", use_container_width=True, key="preset_20"):
+                        preset_kb = 20
+                    if qcol2.button("50 KB", use_container_width=True, key="preset_50"):
+                        preset_kb = 50
+                    if qcol3.button("100 KB", use_container_width=True, key="preset_100"):
+                        preset_kb = 100
+                    if qcol4.button("200 KB", use_container_width=True, key="preset_200"):
+                        preset_kb = 200
 
-                if resize_option:
-                    max_width = st.number_input("Max Width (px)", min_value=100, value=1920, key="comp_w")
-                    max_height = st.number_input("Max Height (px)", min_value=100, value=1080, key="comp_h")
+                    # Store preset in session state so number_input reflects it
+                    if preset_kb:
+                        st.session_state["target_kb_value"] = preset_kb
 
-                if st.button("📦 Compress Image", key="btn_compress", use_container_width=True):
-                    with st.spinner("Compressing..."):
-                        saved_path = save_uploaded_file(uploaded_compress)
-                        if saved_path:
-                            output_path = compress_image(saved_path, quality, max_width, max_height)
-                            if output_path and os.path.exists(output_path):
-                                original_size = len(uploaded_compress.getbuffer())
-                                compressed_size = os.path.getsize(output_path)
-                                reduction = (1 - compressed_size / original_size) * 100
-                                col_a, col_b, col_c = st.columns(3)
-                                with col_a:
-                                    st.metric("Original", get_file_size_str(original_size))
-                                with col_b:
-                                    st.metric("Compressed", get_file_size_str(compressed_size))
-                                with col_c:
-                                    st.metric("Reduction", f"{reduction:.1f}%")
-                                create_download_button(output_path, "⬇️ Download Compressed Image")
-                                cleanup_file(saved_path)
-                            else:
-                                st.error("❌ Compression failed.")
+                    target_kb = st.number_input(
+                        "Or type exact target size (KB):",
+                        min_value=5,
+                        max_value=50000,
+                        value=st.session_state.get("target_kb_value", 100),
+                        step=5,
+                        key="target_kb_input"
+                    )
+
+                    out_format = st.selectbox(
+                        "Output format:",
+                        ["JPEG", "WEBP"],
+                        key="target_compress_format"
+                    )
+
+                    if original_kb <= target_kb:
+                        st.info(f"ℹ️ Your image ({original_kb} KB) is already under {target_kb} KB. "
+                                f"Download the original or pick a smaller target.")
+
+                    if st.button(
+                        f"🎯 Compress to under {target_kb} KB",
+                        key="btn_compress_target",
+                        use_container_width=True
+                    ):
+                        iteration_box = st.empty()
+                        progress = st.progress(0, text="Starting binary search...")
+
+                        # Patch compress_to_target_kb to report progress
+                        # We call it directly and show a spinner
+                        with st.spinner(
+                            f"Finding best quality under {target_kb} KB "
+                            f"(up to 10 iterations)..."
+                        ):
+                            result_bytes, quality_used, success = compress_to_target_kb(
+                                pil_img,
+                                int(target_kb),
+                                output_format=out_format,
+                                max_iterations=10,
+                            )
+
+                        progress.progress(100, text="Done!")
+                        result_kb = len(result_bytes) // 1024
+                        reduction = (1 - len(result_bytes) / len(raw_bytes)) * 100
+
+                        if success:
+                            st.success(
+                                f"✅ Compressed to **{result_kb} KB** "
+                                f"at quality **{quality_used}** "
+                                f"— {reduction:.1f}% smaller"
+                            )
+
+                            col_a, col_b, col_c = st.columns(3)
+                            col_a.metric("Original", f"{original_kb} KB")
+                            col_b.metric("Result", f"{result_kb} KB")
+                            col_c.metric("Quality used", str(quality_used))
+
+                        else:
+                            st.error(
+                                f"❌ Cannot compress below **{target_kb} KB** "
+                                f"even at minimum quality. "
+                                f"Result at quality=1 is **{result_kb} KB**."
+                            )
+                            sug_w, sug_h = suggest_resize_dimensions(pil_img, int(target_kb), out_format)
+                            st.warning(
+                                f"💡 **Suggestion:** Resize the image to approximately "
+                                f"**{sug_w} × {sug_h} px** first, then compress again."
+                            )
+
+                        if result_bytes:
+                            ext = "jpg" if out_format == "JPEG" else "webp"
+                            st.download_button(
+                                f"⬇️ Download ({result_kb} KB)",
+                                data=result_bytes,
+                                file_name=f"target{target_kb}kb_{Path(uploaded_compress.name).stem}.{ext}",
+                                mime=f"image/{ext}",
+                                use_container_width=True
+                            )
 
 # ── TAB 3: RESIZE ────────────────────────────────────────────────
 with tab3:
@@ -332,6 +448,123 @@ with tab4:
                                     st.error("❌ Flip failed.")
 
     with cr_sub2:
+        st.markdown("#### Visually drag to crop your image")
+
+        # Check if streamlit-cropper is available
+        try:
+            from streamlit_cropper import st_cropper
+            CROPPER_AVAILABLE = True
+        except ImportError:
+            CROPPER_AVAILABLE = False
+
+        if not CROPPER_AVAILABLE:
+            st.error(
+                "❌ `streamlit-cropper` is not installed. "
+                "Add `streamlit-cropper>=0.3.0` to requirements.txt and redeploy."
+            )
+        else:
+            uploaded_crop = st.file_uploader(
+                "Upload image to crop",
+                type=["jpg", "jpeg", "png", "webp", "bmp"],
+                key="crop_upload_visual"
+            )
+
+            if uploaded_crop is not None:
+                import io as _io
+                from PIL import Image as PILImage
+
+                pil_img_crop = PILImage.open(_io.BytesIO(uploaded_crop.getvalue()))
+                orig_w, orig_h = pil_img_crop.size
+
+                st.markdown(f"**Original size:** {orig_w} × {orig_h} px")
+
+                # ── Aspect ratio selector ───────────────────────────
+                aspect_choice = st.radio(
+                    "Aspect ratio lock:",
+                    ["Freeform", "1:1 Square", "4:3", "16:9", "3:4 Portrait", "9:16 Portrait"],
+                    horizontal=True,
+                    key="crop_aspect"
+                )
+
+                aspect_map = {
+                    "Freeform": None,
+                    "1:1 Square": (1, 1),
+                    "4:3": (4, 3),
+                    "16:9": (16, 9),
+                    "3:4 Portrait": (3, 4),
+                    "9:16 Portrait": (9, 16),
+                }
+                aspect_ratio = aspect_map[aspect_choice]
+
+                st.info("👆 Drag the handles on the image below to set your crop area.")
+
+                col1, col2 = st.columns([3, 2])
+
+                with col1:
+                    # Interactive crop canvas
+                    cropped_pil = st_cropper(
+                        pil_img_crop,
+                        realtime_update=True,
+                        box_color="#6C63FF",
+                        aspect_ratio=aspect_ratio,
+                        key="cropper_canvas"
+                    )
+
+                with col2:
+                    st.markdown("**Live Preview:**")
+
+                    if cropped_pil is not None:
+                        crop_w, crop_h = cropped_pil.size
+                        st.image(
+                            cropped_pil,
+                            caption=f"Cropped: {crop_w} × {crop_h} px",
+                            use_container_width=True
+                        )
+
+                        # Output format selector
+                        crop_format = st.selectbox(
+                            "Save as:",
+                            ["PNG", "JPEG", "WEBP"],
+                            key="crop_out_format"
+                        )
+
+                        if st.button(
+                            "✂️ Download Cropped Image",
+                            key="btn_visual_crop",
+                            use_container_width=True
+                        ):
+                            buf = _io.BytesIO()
+
+                            save_img = cropped_pil.copy()
+
+                            if crop_format == "JPEG" and save_img.mode in ("RGBA", "LA", "P"):
+                                bg = Image.new("RGB", save_img.size, (255, 255, 255))
+                                bg.paste(save_img, mask=save_img.split()[-1]
+                                         if save_img.mode in ("RGBA", "LA") else None)
+                                save_img = bg
+                            elif crop_format in ("JPEG",) and save_img.mode != "RGB":
+                                save_img = save_img.convert("RGB")
+
+                            save_kwargs = {"format": crop_format}
+                            if crop_format in ("JPEG", "WEBP"):
+                                save_kwargs["quality"] = 92
+                                save_kwargs["optimize"] = True
+
+                            save_img.save(buf, **save_kwargs)
+                            result_bytes = buf.getvalue()
+                            result_kb = len(result_bytes) // 1024
+
+                            ext = crop_format.lower().replace("jpeg", "jpg")
+                            st.success(f"✅ Cropped image ready — {result_kb} KB")
+                            st.download_button(
+                                label=f"⬇️ Save {crop_w}×{crop_h} px Image",
+                                data=result_bytes,
+                                file_name=f"cropped_{Path(uploaded_crop.name).stem}.{ext}",
+                                mime=f"image/{ext}",
+                                use_container_width=True
+                            )
+                    else:
+                        st.info("Drag the crop box on the left to see a preview here.")
         uploaded_crop = st.file_uploader(
             "Upload image to crop",
             type=["jpg", "jpeg", "png", "webp", "bmp"],
